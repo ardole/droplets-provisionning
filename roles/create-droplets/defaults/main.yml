@@ -1,0 +1,4 @@
+---
+do_authentication: 'admin_key'
+droplets_username: 'user'
+droplets_password: 'user'

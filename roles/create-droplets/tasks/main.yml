@@ -1,0 +1,12 @@
+---
+- name: 'Ensure admin key exists at digital ocean'
+  community.digitalocean.digital_ocean:
+    api_token: '{{ do_token }}'
+    state: present
+    command: ssh
+    name: '{{ do_admin_pub_key_name }}'
+    ssh_pub_key: '{{ do_admin_pub_key }}'
+  register: do_admin_pub_key_official
+  when: do_authentication == "admin_key"
+- include_tasks: create-droplet.yml
+  loop: "{{ droplets }}"

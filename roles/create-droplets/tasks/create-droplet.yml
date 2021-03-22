@@ -1,0 +1,51 @@
+- name: 'Ensure key exists at digital ocean'
+  community.digitalocean.digital_ocean:
+    api_token: '{{ do_token }}'
+    state: present
+    command: ssh
+    name: 'ssh_key_{{ item.name }}'
+    ssh_pub_key: '{{ item.ssh_pub_key }}'
+  register: ssk_key_for_this_droplet
+  when: do_authentication == "specific_key"
+
+- name: 'if needed, set ssh key for this droplet to admin'
+  set_fact:
+    ssk_key_for_this_droplet: '{{ do_admin_pub_key_official }}'
+  when: do_authentication == "admin_key"
+
+- name: 'Ensure droplet is present'
+  community.digitalocean.digital_ocean: # ansible-galaxy collection install community.digitalocean
+    api_token: '{{ do_token }}'
+    unique_name: yes
+    region_id: fra1 # can be listed with curl -X GET -H "Content-Type: application/json" -H "Authorization: Bearer 1234" "https://api.digitalocean.com/v2/regions"
+    image_id: centos-7-x64
+    wait_timeout: 100
+    wait: yes
+    name: '{{ item.name }}'
+    size_id: s-1vcpu-1gb # or s-1vcpu-2gb s-2vcpu-2gb s-2vcpu-4gb s-4vcpu-8gb
+    state: present
+    ssh_key_ids: '{{ ssk_key_for_this_droplet.ssh_key.id }}'
+  delegate_to: localhost
+  register: created_droplet
+- name: 'Get name and public ip address of created droplet'
+  set_fact:
+    droplet_public_ip_address: "{{ created_droplet.droplet.networks.v4 | json_query('[?type==`public`].ip_address') | first }}"
+    droplet_name: "{{ created_droplet.droplet.name }}"
+- name: Wait for SSH to be available on droplet
+  wait_for:
+    host: '{{ droplet_public_ip_address }}'
+    port: 22
+    search_regex: OpenSSH
+    delay: 5
+- name: "Add {{ item.name }} to the host group 'droplets'"
+  add_host:
+     name: '{{ item.name }}'
+     hostname: '{{ droplet_public_ip_address }}'
+     ansible_host: '{{ droplet_public_ip_address }}'
+     ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+     ansible_user: root
+     ansible_port: 22
+     groups:
+        - droplets
+- debug:
+    msg: "Droplet '{{ droplet_name }}' for '{{ item.for }}' is available : {{ droplet_public_ip_address }}"

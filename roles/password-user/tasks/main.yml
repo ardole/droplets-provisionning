@@ -1,0 +1,16 @@
+---
+- name: 'Ensure user {{ droplets_username }} is created'
+  ansible.builtin.user:
+    name: '{{ droplets_username }}'
+    password: "{{ droplets_password | password_hash('sha512') }}"
+    shell: /bin/bash
+    groups: wheel
+    append: yes
+- name: 'Ensure user {{ droplets_username }} can ssh login with password'
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: '^PasswordAuthentication'
+    line: 'PasswordAuthentication yes'
+    state: present
+  notify:
+    - restart ssh

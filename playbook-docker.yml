@@ -1,0 +1,24 @@
+#
+# - Create droplets
+# - Install docker on each
+# - Why do not use Droplet docker images ? ahah
+# - Prerequisites: ansible-galaxy install geerlingguy.docker
+#
+---
+- hosts: localhost
+  gather_facts: false
+  roles:
+    - create-droplets
+- hosts: droplets
+  vars:
+    docker_edition: 'ce'
+    docker_package: "docker-{{ docker_edition }}"
+    docker_package_state: present
+    docker_service_state: started
+    docker_service_enabled: true
+    docker_restart_handler_state: restarted
+    docker_install_compose: true
+    docker_compose_version: "1.26.0"
+    docker_compose_path: /usr/local/bin/docker-compose
+  roles:
+    - geerlingguy.docker

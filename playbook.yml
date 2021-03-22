@@ -1,0 +1,15 @@
+#
+# - Create droplets
+# - Configure an SSH key for each one
+#
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    do_authentication: 'specific_key'
+    droplets:
+      - for: "The user"
+        name: "thuser"
+        ssh_pub_key: 'ssh-rsa 1234'
+  roles:
+    - create-droplets
